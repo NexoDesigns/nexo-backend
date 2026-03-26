@@ -13,7 +13,7 @@ pydantic-settings==2.4.0
 
 # Phase 3 dependencies (install now to avoid redeployment)
 # Embeddings + document parsing
-python-multipart=0.0.20
+python-multipart==0.0.20
 openai==2.30.0 # was 1.51.0
 PyMuPDF==1.26.5
 python-docx==1.1.2
