@@ -8,6 +8,7 @@ All other services go through here — never call the OpenAI client directly.
 This makes it trivial to swap the embedding model in the future.
 """
 
+from __future__ import annotations
 from openai import AsyncOpenAI
 
 from core.config import settings
