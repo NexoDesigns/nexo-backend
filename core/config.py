@@ -1,14 +1,28 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
-    supabase_url: str
-    supabase_service_key: str
-    n8n_base_url: str
-    n8n_webhook_secret: str
-    litellm_url: str
-    litellm_api_key: str
+    # Supabase
+    SUPABASE_URL: str
+    SUPABASE_SERVICE_KEY: str
+
+    # n8n
+    N8N_BASE_URL: str                  # e.g. https://n8n.yourname.render.com
+    N8N_WEBHOOK_SECRET: str            # shared secret for backend ↔ n8n auth
+
+    # Self-reference (needed to build callback_url sent to n8n)
+    BACKEND_URL: str                   # e.g. https://nexo-backend.onrender.com
+
+    # LiteLLM (used in Phase 3+)
+    LITELLM_URL: str = ""
+    LITELLM_API_KEY: str = ""
+
+    # CORS — comma-separated list of allowed frontend origins
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
+
 
 settings = Settings()
