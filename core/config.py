@@ -10,10 +10,13 @@ class Settings(BaseSettings):
     N8N_BASE_URL: str                  # e.g. https://n8n.yourname.render.com
     N8N_WEBHOOK_SECRET: str            # shared secret for backend ↔ n8n auth
 
-    # Self-reference (needed to build callback_url sent to n8n)
-    BACKEND_URL: str                   # e.g. https://nexo-backend.onrender.com
+    # Self-reference (for building callback_url sent to n8n)
+    BACKEND_URL: str
 
-    # LiteLLM (used in Phase 3+)
+    # OpenAI — used for embeddings (text-embedding-3-small)
+    OPENAI_API_KEY: str
+
+    # LiteLLM
     LITELLM_URL: str = ""
     LITELLM_API_KEY: str = ""
 
