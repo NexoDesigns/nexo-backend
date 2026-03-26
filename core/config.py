@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     LITELLM_API_KEY: str = ""
 
     # CORS — comma-separated list of allowed frontend origins
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+    ALLOWED_ORIGINS: str = "http://localhost:3000"
 
     class Config:
         env_file = ".env"
