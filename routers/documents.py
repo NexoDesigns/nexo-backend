@@ -23,7 +23,7 @@ from models.document import (
 )
 from services.ingestion_service import ingest_document
 
-router = APIRouter(prefix="/documents", tags=["Documents"])
+router = APIRouter(tags=["Documents"])
 
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 
@@ -44,7 +44,7 @@ def _validate_file(file: UploadFile) -> None:
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 
-@router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/document/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -133,7 +133,7 @@ async def upload_document(
 
 # ── List ──────────────────────────────────────────────────────────────────────
 
-@router.get("", response_model=list[DocumentResponse])
+@router.get("/documents", response_model=list[DocumentResponse])
 async def list_documents(
     project_id: Optional[str] = Query(default=None),
     document_type: Optional[str] = Query(default=None),
@@ -159,7 +159,7 @@ async def list_documents(
     return result.data
 
 
-@router.get("/{document_id}", response_model=DocumentResponse)
+@router.get("/documents/{document_id}", response_model=DocumentResponse)
 async def get_document(
     document_id: UUID,
     user_id: str = Depends(get_current_user_id),
@@ -180,7 +180,7 @@ async def get_document(
 
 # ── Delete ────────────────────────────────────────────────────────────────────
 
-@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     document_id: UUID,
     user_id: str = Depends(get_current_user_id),
@@ -217,7 +217,7 @@ async def delete_document(
 
 # ── Re-ingest ─────────────────────────────────────────────────────────────────
 
-@router.post("/{document_id}/reingest", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/documents/{document_id}/reingest", status_code=status.HTTP_202_ACCEPTED)
 async def reingest_document(
     document_id: UUID,
     background_tasks: BackgroundTasks,
