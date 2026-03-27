@@ -122,6 +122,24 @@ async def archive_project(
         raise HTTPException(status_code=404, detail="Project not found")
 
 
+# ── Active runs ───────────────────────────────────────────────────────────────
+
+@router.get("/{project_id}/active-runs")
+async def list_active_runs(
+    project_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """Return all active runs for a project from project_active_runs."""
+    result = (
+        supabase.table("project_active_runs")
+        .select("*")
+        .eq("project_id", str(project_id))
+        .execute()
+    )
+    return result.data
+
+
 # ── Requirements ──────────────────────────────────────────────────────────────
 
 @router.get("/{project_id}/requirements", response_model=RequirementsResponse)
