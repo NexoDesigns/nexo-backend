@@ -142,26 +142,22 @@ async def list_active_runs(
 
 # ── Requirements ──────────────────────────────────────────────────────────────
 
-@router.get("/{project_id}/requirements", response_model=RequirementsResponse)
+@router.get("/{project_id}/requirements", response_model=RequirementsResponse | None)
 async def get_requirements(
     project_id: UUID,
     user_id: str = Depends(get_current_user_id),
     supabase=Depends(get_supabase),
 ):
-    """Get the requirements for a project."""
+    """Get the requirements for a project. Returns null if none exist yet."""
     result = (
         supabase.table("project_requirements")
         .select("*")
         .eq("project_id", str(project_id))
-        .single()
         .execute()
     )
     if not result.data:
-        raise HTTPException(
-            status_code=404,
-            detail="Requirements not found for this project",
-        )
-    return result.data
+        return None
+    return result.data[0]
 
 
 @router.post(
