@@ -103,6 +103,7 @@ async def trigger_phase(
     project_id: str,
     phase_id: str,
     custom_inputs: Optional[dict],
+    use_perplexity: Optional[bool],
     user_id: str,
 ) -> dict:
     """
@@ -146,6 +147,7 @@ async def trigger_phase(
         "project_requirements": requirements,
         "previous_phase_outputs": previous_outputs,
         "custom_inputs": custom_inputs or {},
+        "use_perplexity": use_perplexity or True, # por defecto siempre se usa perplexity
         "rag_context": rag_context,
     }
 

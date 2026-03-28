@@ -11,8 +11,10 @@ class RunCreate(BaseModel):
     """
     Body sent by the frontend when triggering a phase execution.
     custom_inputs is free-form: each phase has different input fields.
+    use_perplexity is only relevant for phase_id='research'.
     """
     custom_inputs: Optional[dict[str, Any]] = None
+    use_perplexity: Optional[bool] = None
 
 
 # ── Run responses ─────────────────────────────────────────────────────────────

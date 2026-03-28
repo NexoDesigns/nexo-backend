@@ -62,6 +62,7 @@ async def trigger_run(
             project_id=str(project_id),
             phase_id=phase_id,
             custom_inputs=body.custom_inputs,
+            use_perplexity=body.use_perplexity,
             user_id=user_id,
         )
     except ValueError as e:
