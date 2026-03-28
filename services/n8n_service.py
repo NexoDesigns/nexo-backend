@@ -147,7 +147,7 @@ async def trigger_phase(
         "project_requirements": requirements,
         "previous_phase_outputs": previous_outputs,
         "custom_inputs": custom_inputs or {},
-        "use_perplexity": use_perplexity or True, # por defecto siempre se usa perplexity
+        "use_perplexity": use_perplexity if use_perplexity is not None else True, # por defecto siempre se usa perplexity
         "rag_context": rag_context,
     }
 
