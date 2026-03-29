@@ -17,7 +17,7 @@ from core.config import settings
 from core.supabase import get_supabase
 from services import rag_service
 
-PHASE_ORDER = ["research", "ic_selection", "component_selection", "netlist"]
+PHASE_ORDER = ["research", "ic_selection", "ic_naming_agent", "component_selection", "netlist"]
 
 
 def _phases_before(phase_id: str) -> list[str]:
