@@ -27,7 +27,7 @@ class RunSummary(BaseModel):
     created_by: Optional[UUID]
     created_at: datetime
     completed_at: Optional[datetime]
-    duration_seconds: Optional[int]
+    duration_seconds: Optional[float]
     llm_tokens_used: Optional[int]
     notes: Optional[str] = None
 
@@ -44,7 +44,7 @@ class RunDetail(BaseModel):
     rag_context: Optional[dict[str, Any]]
     n8n_execution_id: Optional[str]
     error_message: Optional[str]
-    duration_seconds: Optional[int]
+    duration_seconds: Optional[float]
     llm_tokens_used: Optional[int]
     notes: Optional[str] = None
     created_by: Optional[UUID]
@@ -68,7 +68,7 @@ class RunNotesUpdate(BaseModel):
 # ── Complete run ──────────────────────────────────────────────────────────────
 
 class RunComplete(BaseModel):
-    duration_seconds: Optional[int] = None
+    duration_seconds: Optional[float] = None
     llm_tokens_used: Optional[int] = None
 
 
@@ -79,6 +79,6 @@ class N8nCallbackBody(BaseModel):
     status: str  # 'completed' | 'failed'
     output_payload: Optional[dict[str, Any]] = None
     n8n_execution_id: Optional[str] = None
-    duration_seconds: Optional[int] = None
+    duration_seconds: Optional[float] = None
     tokens_used: Optional[int] = None
     error_message: Optional[str] = None
