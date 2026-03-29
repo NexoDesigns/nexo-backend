@@ -65,6 +65,13 @@ class RunNotesUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+# ── Complete run ──────────────────────────────────────────────────────────────
+
+class RunComplete(BaseModel):
+    duration_seconds: Optional[int] = None
+    llm_tokens_used: Optional[int] = None
+
+
 # ── n8n callback ──────────────────────────────────────────────────────────────
 
 class N8nCallbackBody(BaseModel):

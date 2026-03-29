@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.security import get_current_user_id
 from core.supabase import get_supabase
-from models.run import RunCreate, RunDetail, RunNotesUpdate, RunSummary, RunTriggerResponse
+from models.run import RunComplete, RunCreate, RunDetail, RunNotesUpdate, RunSummary, RunTriggerResponse
 from services import n8n_service
 
 router = APIRouter(prefix="/projects/{project_id}/phases/{phase_id}", tags=["Runs"])
@@ -182,6 +182,37 @@ async def activate_run(
         "run_id": str(run_id),
         "phase_id": phase_id,
     }
+
+
+# ── Complete a run ────────────────────────────────────────────────────────────
+
+@router.patch("/runs/{run_id}/complete", status_code=status.HTTP_200_OK)
+async def complete_run(
+    project_id: UUID,
+    phase_id: str,
+    run_id: UUID,
+    body: RunComplete,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """Mark a run as completed and record duration and token usage."""
+    from datetime import datetime, timezone
+    result = (
+        supabase.table("phase_runs")
+        .update({
+            "status": "completed",
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "duration_seconds": body.duration_seconds,
+            "llm_tokens_used": body.llm_tokens_used,
+        })
+        .eq("id", str(run_id))
+        .eq("project_id", str(project_id))
+        .eq("phase_id", phase_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return {"run_id": str(run_id), "status": "completed"}
 
 
 # ── Update run notes ──────────────────────────────────────────────────────────
