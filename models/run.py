@@ -29,6 +29,7 @@ class RunSummary(BaseModel):
     completed_at: Optional[datetime]
     duration_seconds: Optional[int]
     llm_tokens_used: Optional[int]
+    notes: Optional[str] = None
 
 
 class RunDetail(BaseModel):
@@ -45,6 +46,7 @@ class RunDetail(BaseModel):
     error_message: Optional[str]
     duration_seconds: Optional[int]
     llm_tokens_used: Optional[int]
+    notes: Optional[str] = None
     created_by: Optional[UUID]
     created_at: datetime
     completed_at: Optional[datetime]
@@ -55,6 +57,12 @@ class RunTriggerResponse(BaseModel):
     run_id: UUID
     run_number: int
     status: str
+
+
+# ── Run notes update ──────────────────────────────────────────────────────────
+
+class RunNotesUpdate(BaseModel):
+    notes: Optional[str] = None
 
 
 # ── n8n callback ──────────────────────────────────────────────────────────────

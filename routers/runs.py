@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.security import get_current_user_id
 from core.supabase import get_supabase
-from models.run import RunCreate, RunDetail, RunSummary, RunTriggerResponse
+from models.run import RunCreate, RunDetail, RunNotesUpdate, RunSummary, RunTriggerResponse
 from services import n8n_service
 
 router = APIRouter(prefix="/projects/{project_id}/phases/{phase_id}", tags=["Runs"])
@@ -95,7 +95,7 @@ async def list_runs(
         supabase.table("phase_runs")
         .select(
             "id, run_number, status, created_by, created_at, completed_at, "
-            "duration_seconds, llm_tokens_used"
+            "duration_seconds, llm_tokens_used, notes"
         )
         .eq("project_id", str(project_id))
         .eq("phase_id", phase_id)
@@ -182,3 +182,28 @@ async def activate_run(
         "run_id": str(run_id),
         "phase_id": phase_id,
     }
+
+
+# ── Update run notes ──────────────────────────────────────────────────────────
+
+@router.patch("/runs/{run_id}/notes", status_code=status.HTTP_200_OK)
+async def update_run_notes(
+    project_id: UUID,
+    phase_id: str,
+    run_id: UUID,
+    body: RunNotesUpdate,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """Update the notes field of a run."""
+    result = (
+        supabase.table("phase_runs")
+        .update({"notes": body.notes})
+        .eq("id", str(run_id))
+        .eq("project_id", str(project_id))
+        .eq("phase_id", phase_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return {"run_id": str(run_id), "notes": body.notes}
