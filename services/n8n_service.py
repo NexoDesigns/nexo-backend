@@ -143,6 +143,7 @@ async def trigger_phase(
     callback_url = f"{settings.BACKEND_URL}/webhooks/n8n/callback"
     payload = {
         "run_id": run_id,
+        "phase_id": phase_id,
         "callback_url": callback_url,
         "project_requirements": requirements,
         "previous_phase_outputs": previous_outputs,
