@@ -13,6 +13,21 @@ class ProfileResponse(BaseModel):
     email: str | None = None
 
 
+@router.get("s", response_model=list[ProfileResponse])
+async def list_profiles(
+    _: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """Return all user profiles."""
+    result = (
+        supabase.table("profiles")
+        .select("id, full_name, email")
+        .order("full_name")
+        .execute()
+    )
+    return result.data
+
+
 @router.get("/me", response_model=ProfileResponse)
 async def get_my_profile(
     user_id: str = Depends(get_current_user_id),
