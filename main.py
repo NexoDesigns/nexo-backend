@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
-from routers import components, documents, pipeline, projects, rag, runs, webhooks
+from routers import components, documents, pipeline, profile, projects, rag, runs, webhooks
 
 app = FastAPI(
     title="Nexo Designs API",
@@ -21,6 +21,7 @@ app.add_middleware(
 )
 
 # ── Routers ───────────────────────────────────────────────────────────────────
+app.include_router(profile.router)
 app.include_router(projects.router)
 app.include_router(runs.router)
 app.include_router(webhooks.router)
