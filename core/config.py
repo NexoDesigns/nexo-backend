@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     # n8n
     N8N_BASE_URL: str
     N8N_WEBHOOK_SECRET: str
+    N8N_REQUIREMENTS_WEBHOOK_URL: str = ""
 
     # Self-reference (for building callback_url sent to n8n)
     BACKEND_URL: str

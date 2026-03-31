@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(claude mcp:*)"
+      "Bash(claude mcp:*)",
+      "Read(//c/Users/Usuario/Documents/**)",
+      "Bash(find '/c/Users/Usuario/Documents/Nexo Design/nexo-backend' -name *migration* -o -name *schema* -o -name *sql*)",
+      "Bash(cd /c/Users/Usuario/Documents/\"Nexo Design\"/nexo-backend)",
+      "Bash(find /c/Users/Usuario/Documents/Nexo Design/nexo-backend -type f -name *.md)"
     ]
   }
 }

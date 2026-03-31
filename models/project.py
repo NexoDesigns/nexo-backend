@@ -19,6 +19,7 @@ class ProjectUpdate(BaseModel):
     client_name: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = None  # 'active' | 'archived' | 'completed'
+    requirements_input_drive_url: Optional[str] = None
 
 
 class ProjectResponse(BaseModel):
@@ -30,6 +31,7 @@ class ProjectResponse(BaseModel):
     created_by: Optional[UUID]
     created_at: datetime
     updated_at: datetime
+    requirements_input_drive_url: Optional[str] = None
 
 
 # ── Project Requirements ──────────────────────────────────────────────────────
