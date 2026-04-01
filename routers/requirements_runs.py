@@ -225,7 +225,7 @@ async def complete_requirements_run(
         "output_drive_file_id": body.output_drive_file_id,
         "completed_at": datetime.now(timezone.utc).isoformat(),
     }
-    if body.n8n_execution_id:
+    if body.n8n_execution_id is not None:
         update["n8n_execution_id"] = body.n8n_execution_id
     if body.duration_seconds is not None:
         update["duration_seconds"] = body.duration_seconds
