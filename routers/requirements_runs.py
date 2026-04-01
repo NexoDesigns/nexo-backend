@@ -145,7 +145,7 @@ async def list_requirements_runs(
         supabase.table("requirements_runs")
         .select(
             "id, run_number, status, custom_prompt, input_drive_url, "
-            "output_drive_url, output_drive_file_id, error_message, "
+            "output_drive_url, output_drive_file_id, error_message, n8n_execution_id "
             "created_by, created_at, completed_at, duration_seconds"
         )
         .eq("project_id", str(project_id))
