@@ -13,6 +13,7 @@ class RequirementsRunComplete(BaseModel):
     output_drive_url: str
     output_drive_file_id: str
     duration_seconds: Optional[float] = None
+    n8n_execution_id: Optional[str]
     error_message: Optional[str] = None
 
 
