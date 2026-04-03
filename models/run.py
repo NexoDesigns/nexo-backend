@@ -29,6 +29,7 @@ class RunSummary(BaseModel):
     completed_at: Optional[datetime]
     duration_seconds: Optional[float]
     llm_tokens_used: Optional[int]
+    error_message: Optional[str] = None
     notes: Optional[str] = None
 
 

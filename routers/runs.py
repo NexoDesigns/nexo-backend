@@ -95,7 +95,7 @@ async def list_runs(
         supabase.table("phase_runs")
         .select(
             "id, run_number, status, created_by, created_at, completed_at, "
-            "duration_seconds, llm_tokens_used, notes"
+            "duration_seconds, llm_tokens_used, error_message, notes"
         )
         .eq("project_id", str(project_id))
         .eq("phase_id", phase_id)
