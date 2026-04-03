@@ -25,6 +25,7 @@ class RequirementsRunSummary(BaseModel):
     input_drive_url: Optional[str]
     output_drive_url: Optional[str]
     output_drive_file_id: Optional[str]
+    n8n_execution_id: Optional[str]
     error_message: Optional[str]
     created_by: Optional[UUID]
     created_at: datetime
