@@ -51,7 +51,11 @@ async def trigger_requirements_run(
     # ── Validate project exists and has an input URL ───────────────────────────
     project_result = (
         supabase.table("projects")
-        .select("id, requirements_input_drive_url")
+        .select(
+            "id, requirements_input_drive_url, "
+            "normative_industry, normative_client_type, normative_user_age_range, "
+            "normative_target_countries, normative_extra_context"
+        )
         .eq("id", str(project_id))
         .single()
         .execute()
@@ -60,6 +64,24 @@ async def trigger_requirements_run(
         raise HTTPException(status_code=404, detail="Project not found")
 
     project = project_result.data
+    active_norms_result = (
+        supabase.table("project_normatives")
+        .select("document_id, documents(id, name, metadata)")
+        .eq("project_id", str(project_id))
+        .execute()
+    )
+    active_normatives = active_norms_result.data or []
+    normative_document_ids = [row["document_id"] for row in active_normatives]
+    normative_metadata = [
+        {
+            "document_id": row["document_id"],
+            "name": row["documents"]["name"] if row.get("documents") else None,
+            "standard_code": (row["documents"]["metadata"] or {}).get("standard_code") if row.get("documents") else None,
+            "scope_summary": (row["documents"]["metadata"] or {}).get("scope_summary") if row.get("documents") else None,
+        }
+        for row in active_normatives
+        if row.get("documents")
+    ]
     input_drive_url = project.get("requirements_input_drive_url")
     if not input_drive_url:
         raise HTTPException(
@@ -104,6 +126,19 @@ async def trigger_requirements_run(
         "callback_url": callback_url,
         "input_drive_url": input_drive_url,
         "custom_prompt": body.custom_prompt,
+        "normative_context": {
+            "industry": project.get("normative_industry"),
+            "client_type": project.get("normative_client_type"),
+            "user_age_range": project.get("normative_user_age_range"),
+            "target_countries": project.get("normative_target_countries"),
+            "extra_context": project.get("normative_extra_context"),
+        },
+        "normatives": {
+            "document_ids": normative_document_ids,
+            "metadata": normative_metadata,
+            "rag_search_endpoint": f"{settings.BACKEND_URL}/rag/search",
+            "rag_auth_header": settings.N8N_WEBHOOK_SECRET,
+        },
     }
 
     try:
