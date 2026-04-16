@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 import json
 
@@ -20,6 +20,11 @@ class ProjectUpdate(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None  # 'active' | 'archived' | 'completed'
     requirements_input_drive_url: Optional[str] = None
+    normative_industry: Optional[str] = None
+    normative_client_type: Optional[str] = None
+    normative_user_age_range: Optional[str] = None
+    normative_target_countries: Optional[List[str]] = None
+    normative_extra_context: Optional[str] = None
 
 
 class ProjectResponse(BaseModel):
@@ -32,6 +37,11 @@ class ProjectResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     requirements_input_drive_url: Optional[str] = None
+    normative_industry: Optional[str] = None
+    normative_client_type: Optional[str] = None
+    normative_user_age_range: Optional[str] = None
+    normative_target_countries: Optional[List[str]] = None
+    normative_extra_context: Optional[str] = None
 
 
 # ── Project Requirements ──────────────────────────────────────────────────────
