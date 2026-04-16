@@ -78,6 +78,7 @@ async def search(
     project_id: Optional[str] = None,
     type_filter: Optional[str] = None,
     top_k: int = DEFAULT_TOP_K,
+    document_ids: Optional[list[str]] = None,
 ) -> list[dict[str, Any]]:
     """
     Semantic search over document_chunks.
@@ -104,6 +105,8 @@ async def search(
         rpc_params["filter_project_id"] = project_id
     if type_filter:
         rpc_params["filter_type"] = type_filter
+    if document_ids:
+        rpc_params["filter_document_ids"] = document_ids
 
     result = supabase.rpc("search_documents", rpc_params).execute()
     return result.data or []
