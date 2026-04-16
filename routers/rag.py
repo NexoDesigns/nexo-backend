@@ -42,6 +42,7 @@ async def semantic_search(
         project_id=body.project_id,
         type_filter=body.type_filter,
         top_k=body.top_k,
+        document_ids=[str(uid) for uid in body.document_ids] if body.document_ids else None,
     )
 
     return RAGSearchResult(
