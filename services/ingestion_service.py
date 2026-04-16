@@ -165,6 +165,19 @@ def chunk_text(text: str) -> list[str]:
     return chunks
 
 
+# ── Chunk metadata builder ────────────────────────────────────────────────────
+
+def _build_chunk_metadata(i: int, total: int, doc: dict) -> dict:
+    base = {"chunk_index": i, "total_chunks": total}
+    if doc.get("type") == "normative" and doc.get("metadata"):
+        norm_meta = doc["metadata"]
+        base["standard_code"] = norm_meta.get("standard_code")
+        base["standard_version"] = norm_meta.get("standard_version")
+        base["applicable_industries"] = norm_meta.get("applicable_industries")
+        base["applicable_countries"] = norm_meta.get("applicable_countries")
+    return base
+
+
 # ── Main ingestion pipeline ───────────────────────────────────────────────────
 
 async def ingest_document(document_id: str) -> None:
@@ -235,7 +248,7 @@ async def ingest_document(document_id: str) -> None:
                 "chunk_index": idx,
                 "content": chunk,
                 "embedding": embedding,
-                "metadata": {"chunk_index": idx, "total_chunks": len(chunks)},
+                "metadata": _build_chunk_metadata(idx, len(chunks), doc),
             }
             for idx, (chunk, embedding) in enumerate(zip(chunks, embeddings))
         ]
