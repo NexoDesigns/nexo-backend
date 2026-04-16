@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -12,6 +12,7 @@ ALLOWED_DOCUMENT_TYPES = (
     "design_note",
     "reference_schematic",
     "other",
+    "normative",
 )
 
 ALLOWED_MIME_TYPES = {
@@ -47,6 +48,7 @@ class RAGSearchRequest(BaseModel):
     project_id: Optional[str] = None
     type_filter: Optional[str] = None
     top_k: int = 5
+    document_ids: Optional[List[UUID]] = None
 
 
 class RAGSearchResult(BaseModel):
