@@ -1,26 +1,36 @@
 """
 Normatives router.
 
-Manages the global normative document library and project-level normative assignments.
+Manages the global normative document library, project-level normative assignments,
+and normative analysis workflow runs.
 
 Endpoints:
-  POST   /normatives/upload                         — Upload a PDF normative
-  GET    /normatives                                — List all normatives (with optional filters)
-  DELETE /normatives/{document_id}                  — Delete a normative document
-  POST   /projects/{project_id}/normatives/suggest  — Suggest applicable normatives for a project
-  GET    /projects/{project_id}/normatives           — Get active normatives for a project
-  POST   /projects/{project_id}/normatives           — Set active normatives for a project
+  POST   /normatives/upload                               — Upload a PDF normative
+  GET    /normatives                                      — List all normatives (with optional filters)
+  DELETE /normatives/{document_id}                        — Delete a normative document
+  POST   /projects/{project_id}/normatives/suggest        — Suggest applicable normatives for a project
+  GET    /projects/{project_id}/normatives                 — Get active normatives for a project
+  POST   /projects/{project_id}/normatives                 — Set active normatives for a project
+  POST   /projects/{project_id}/normatives/run             — Trigger a normative analysis run
+  GET    /projects/{project_id}/normatives/runs            — List normative runs for a project
+  GET    /projects/{project_id}/normatives/runs/{run_id}   — Get a single normative run
+  POST   /projects/{project_id}/normatives/runs/{run_id}/complete — n8n callback
 
 Auth:
-  All endpoints: JWT via Depends(get_current_user_id)
+  User endpoints: JWT via Depends(get_current_user_id)
+  n8n callback: X-N8N-Secret header
 """
 
 import io
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
+from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, HTTPException, UploadFile, status
 
+from core.config import settings
 from core.security import get_current_user_id
 from core.supabase import get_supabase
 from models.normative import (
@@ -28,6 +38,12 @@ from models.normative import (
     NormativeSuggestResponse,
     NormativeSuggestion,
     ProjectNormativesUpdateRequest,
+)
+from models.normative_run import (
+    NormativeRunComplete,
+    NormativeRunCreate,
+    NormativeRunSummary,
+    NormativeRunTriggerResponse,
 )
 from services import normative_service
 from services.ingestion_service import ingest_document
@@ -235,6 +251,7 @@ async def get_project_normatives(
 
 # ── Set active normatives for a project ──────────────────────────────────────
 
+
 @router.post(
     "/projects/{project_id}/normatives",
     response_model=list[NormativeDocumentResponse],
@@ -275,3 +292,229 @@ async def set_project_normatives(
         .execute()
     )
     return [row["documents"] for row in (result.data or []) if row.get("documents")]
+
+
+# ── Trigger a normative analysis run ─────────────────────────────────────────
+
+@router.post(
+    "/projects/{project_id}/normatives/run",
+    response_model=NormativeRunTriggerResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def trigger_normative_run(
+    project_id: UUID,
+    body: NormativeRunCreate,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """
+    Trigger the normative analysis n8n workflow for a project.
+
+    Sends project normative context + active normatives to n8n.
+    Creates a normative_run record with status='running' and fires the
+    webhook asynchronously. Returns immediately with run_id.
+    Poll GET /normatives/runs/{run_id} for status updates.
+    """
+    project_result = (
+        supabase.table("projects")
+        .select(
+            "id, normative_industry, normative_client_type, normative_user_age_range, "
+            "normative_target_countries, normative_extra_context"
+        )
+        .eq("id", str(project_id))
+        .single()
+        .execute()
+    )
+    if not project_result.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project = project_result.data
+
+    active_norms_result = (
+        supabase.table("project_normatives")
+        .select("document_id, documents(id, name, metadata)")
+        .eq("project_id", str(project_id))
+        .execute()
+    )
+    active_normatives = active_norms_result.data or []
+    normative_document_ids = [row["document_id"] for row in active_normatives]
+    normative_metadata = [
+        {
+            "document_id": row["document_id"],
+            "name": row["documents"]["name"] if row.get("documents") else None,
+            "standard_code": (row["documents"]["metadata"] or {}).get("standard_code") if row.get("documents") else None,
+            "scope_summary": (row["documents"]["metadata"] or {}).get("scope_summary") if row.get("documents") else None,
+        }
+        for row in active_normatives
+        if row.get("documents")
+    ]
+
+    count_result = (
+        supabase.table("normative_runs")
+        .select("id", count="exact")
+        .eq("project_id", str(project_id))
+        .execute()
+    )
+    run_number = (count_result.count or 0) + 1
+
+    insert_result = (
+        supabase.table("normative_runs")
+        .insert({
+            "project_id": str(project_id),
+            "run_number": run_number,
+            "status": "running",
+            "custom_prompt": body.custom_prompt,
+            "created_by": user_id,
+        })
+        .execute()
+    )
+    if not insert_result.data:
+        raise HTTPException(status_code=500, detail="Failed to create normative run record")
+
+    run_id = insert_result.data[0]["id"]
+
+    callback_url = f"{settings.BACKEND_URL}/projects/{project_id}/normatives/runs/{run_id}/complete"
+    webhook_payload = {
+        "run_id": run_id,
+        "project_id": str(project_id),
+        "callback_url": callback_url,
+        "custom_prompt": body.custom_prompt,
+        "normative_context": {
+            "industry": project.get("normative_industry"),
+            "client_type": project.get("normative_client_type"),
+            "user_age_range": project.get("normative_user_age_range"),
+            "target_countries": project.get("normative_target_countries"),
+            "extra_context": project.get("normative_extra_context"),
+        },
+        "normatives": {
+            "document_ids": normative_document_ids,
+            "metadata": normative_metadata,
+            "rag_search_endpoint": f"{settings.BACKEND_URL}/rag/search",
+            "rag_auth_header": settings.N8N_WEBHOOK_SECRET,
+        },
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(
+                settings.N8N_NORMATIVES_WEBHOOK_URL,
+                json=webhook_payload,
+                headers={"X-N8N-Secret": settings.N8N_WEBHOOK_SECRET},
+            )
+    except Exception as e:
+        supabase.table("normative_runs").update({
+            "status": "failed",
+            "error_message": f"Failed to reach n8n: {str(e)}",
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", run_id).execute()
+        raise HTTPException(status_code=502, detail=f"Failed to trigger n8n workflow: {str(e)}")
+
+    return NormativeRunTriggerResponse(run_id=run_id, run_number=run_number, status="running")
+
+
+# ── List normative runs ───────────────────────────────────────────────────────
+
+@router.get(
+    "/projects/{project_id}/normatives/runs",
+    response_model=list[NormativeRunSummary],
+)
+async def list_normative_runs(
+    project_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """List all normative runs for a project, ordered by run_number DESC."""
+    result = (
+        supabase.table("normative_runs")
+        .select(
+            "id, run_number, status, custom_prompt, output_data, "
+            "n8n_execution_id, error_message, created_by, created_at, "
+            "completed_at, duration_seconds"
+        )
+        .eq("project_id", str(project_id))
+        .order("run_number", desc=True)
+        .execute()
+    )
+    return result.data or []
+
+
+# ── Get normative run detail ──────────────────────────────────────────────────
+
+@router.get(
+    "/projects/{project_id}/normatives/runs/{run_id}",
+    response_model=NormativeRunSummary,
+)
+async def get_normative_run(
+    project_id: UUID,
+    run_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """Get the detail of a single normative run."""
+    result = (
+        supabase.table("normative_runs")
+        .select("*")
+        .eq("id", str(run_id))
+        .eq("project_id", str(project_id))
+        .single()
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Normative run not found")
+    return result.data
+
+
+# ── n8n callback — complete a normative run ───────────────────────────────────
+
+@router.post(
+    "/projects/{project_id}/normatives/runs/{run_id}/complete",
+    status_code=status.HTTP_200_OK,
+)
+async def complete_normative_run(
+    project_id: UUID,
+    run_id: UUID,
+    body: NormativeRunComplete,
+    x_n8n_secret: str = Header(default=None, alias="X-N8N-Secret"),
+    supabase=Depends(get_supabase),
+):
+    """
+    Called by n8n when the normative analysis workflow finishes.
+
+    Saves the JSON output and marks the run as completed or failed.
+    Not protected by Supabase Auth — uses X-N8N-Secret header instead.
+    Idempotent: if the run is already finalized, returns early.
+    """
+    if x_n8n_secret != settings.N8N_WEBHOOK_SECRET:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid webhook secret")
+
+    run_result = (
+        supabase.table("normative_runs")
+        .select("id, status")
+        .eq("id", str(run_id))
+        .eq("project_id", str(project_id))
+        .single()
+        .execute()
+    )
+    if not run_result.data:
+        raise HTTPException(status_code=404, detail="Normative run not found")
+
+    if run_result.data["status"] not in ("running", "pending"):
+        return {"message": "Run already finalized", "run_id": str(run_id), "status": run_result.data["status"]}
+
+    final_status = "failed" if body.error_message else "completed"
+    update: dict = {
+        "status": final_status,
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if body.output_data is not None:
+        update["output_data"] = body.output_data
+    if body.n8n_execution_id is not None:
+        update["n8n_execution_id"] = body.n8n_execution_id
+    if body.duration_seconds is not None:
+        update["duration_seconds"] = body.duration_seconds
+    if body.error_message:
+        update["error_message"] = body.error_message
+
+    supabase.table("normative_runs").update(update).eq("id", str(run_id)).execute()
+
+    return {"message": "Run updated successfully", "run_id": str(run_id), "status": final_status}
