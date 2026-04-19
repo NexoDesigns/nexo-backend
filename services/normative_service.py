@@ -89,7 +89,8 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
             }
             for d in candidates
         ]
-
+    
+    print("executing n8n")
     n8n_payload = {
         "project_context": {
             "industry": project.get("normative_industry"),
@@ -110,7 +111,7 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
             for d in candidates
         ],
     }
-
+    print("llamando a n8n...")
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
             settings.N8N_NORMATIVES_SUGGEST_WEBHOOK_URL,
@@ -120,6 +121,7 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
         response.raise_for_status()
         ranked: list[dict] = response.json()  # [{ document_id, relevance, reason }, ...]
 
+    print("respuesta del n8n:", ranked)
     # Merge n8n ranking with full doc data
     doc_map = {d["id"]: d for d in candidates}
     suggestions = []
