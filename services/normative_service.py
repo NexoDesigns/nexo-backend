@@ -138,4 +138,5 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
                 "standard_code": item.get("standard_code"),
                 "score": item.get("score"),
             })
+    print("suggestions finales:", suggestions)
     return suggestions
