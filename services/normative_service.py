@@ -37,6 +37,7 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
         .execute()
     )
     if not project_result.data:
+        print("ERROR: project result.data is empty")
         raise ValueError(f"Project {project_id} not found")
 
     project = project_result.data
@@ -53,7 +54,9 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
         .execute()
     )
     all_normatives = docs_result.data or []
+    print("all normatives:", all_normatives)
     if not all_normatives:
+        print("all normatives is EMPTY!!")
         return []
 
     # ── Step 3: Tag-filter ────────────────────────────────────────────────────
