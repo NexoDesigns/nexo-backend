@@ -59,8 +59,10 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
     # ── Step 3: Tag-filter ────────────────────────────────────────────────────
     def _matches(doc: dict) -> bool:
         meta = doc.get("metadata") or {}
-        doc_industries = meta.get("applicable_industries") or []
-        doc_countries = meta.get("applicable_countries") or []
+        raw_industries = meta.get("applicable_industries") or []
+        raw_countries = meta.get("applicable_countries") or []
+        doc_industries = [raw_industries] if isinstance(raw_industries, str) else raw_industries
+        doc_countries = [raw_countries] if isinstance(raw_countries, str) else raw_countries
         industry_match = not industry or industry in doc_industries
         country_match = (
             not doc_countries          # empty = global, always include
@@ -69,8 +71,8 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
         )
         return industry_match or country_match
 
-    print("candidates:", candidates)
     candidates = [d for d in all_normatives if _matches(d)] or all_normatives
+    print("candidates:", candidates)
 
     # ── Step 4: LLM ranking via n8n ───────────────────────────────────────────
     if not settings.N8N_NORMATIVES_SUGGEST_WEBHOOK_URL:
