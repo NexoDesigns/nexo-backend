@@ -24,7 +24,7 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
     Each item is a dict with keys: document_id, name, metadata, relevance, reason.
     """
     supabase = get_supabase()
-
+    print("called normatives/suggest")
     # ── Step 1: Load project normative context ────────────────────────────────
     project_result = (
         supabase.table("projects")
@@ -69,6 +69,7 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
         )
         return industry_match or country_match
 
+    print("candidates:", candidates)
     candidates = [d for d in all_normatives if _matches(d)] or all_normatives
 
     # ── Step 4: LLM ranking via n8n ───────────────────────────────────────────
