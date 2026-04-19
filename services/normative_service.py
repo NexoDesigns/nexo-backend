@@ -134,6 +134,8 @@ async def suggest_normatives(project_id: str) -> list[dict[str, Any]]:
                 "name": doc["name"],
                 "metadata": doc.get("metadata"),
                 "relevance": item.get("relevance"),
-                "reason": item.get("reason"),
+                "relevance_reason": item.get("relevance_reason"),
+                "standard_code": item.get("standard_code"),
+                "score": item.get("score"),
             })
     return suggestions
