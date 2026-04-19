@@ -39,7 +39,9 @@ class NormativeSuggestion(BaseModel):
     name: str
     metadata: Optional[dict[str, Any]] = None
     relevance: Optional[str] = None   # 'mandatory' | 'recommended'
-    reason: Optional[str] = None
+    relevance_reason: str | None = None  # no "reason"
+    standard_code: str | None = None
+    score: float | None = None
 
 
 class NormativeSuggestResponse(BaseModel):
