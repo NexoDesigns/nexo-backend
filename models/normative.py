@@ -53,7 +53,7 @@ DecisionTreeAnswers = dict[str, list[str]]
 
 
 class DecisionTreeResponse(BaseModel):
-    DecisionTreeAnswers
+    answers: DecisionTreeAnswers
 
 
 class DecisionTreeSaveRequest(BaseModel):
