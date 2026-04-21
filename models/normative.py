@@ -57,4 +57,4 @@ class DecisionTreeResponse(BaseModel):
 
 
 class DecisionTreeSaveRequest(BaseModel):
-    DecisionTreeAnswers
+    answers: DecisionTreeAnswers

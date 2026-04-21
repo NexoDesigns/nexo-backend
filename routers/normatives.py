@@ -302,7 +302,7 @@ async def save_decision_tree(
     """Save (replace) the decision-tree answers for a project."""
     result = (
         supabase.table("projects")
-        .update({"normative_decision_tree_answers": body})
+        .update({"normative_decision_tree_answers": body.answers})
         .eq("id", project_id)
         .execute()
     )
