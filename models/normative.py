@@ -46,3 +46,15 @@ class NormativeSuggestion(BaseModel):
 
 class NormativeSuggestResponse(BaseModel):
     suggestions: List[NormativeSuggestion]
+
+
+# Decision-tree answers: questionId → list of selected option values
+DecisionTreeAnswers = dict[str, list[str]]
+
+
+class DecisionTreeResponse(BaseModel):
+    answers: DecisionTreeAnswers
+
+
+class DecisionTreeSaveRequest(BaseModel):
+    answers: DecisionTreeAnswers

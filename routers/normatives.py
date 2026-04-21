@@ -34,6 +34,8 @@ from core.config import settings
 from core.security import get_current_user_id
 from core.supabase import get_supabase
 from models.normative import (
+    DecisionTreeResponse,
+    DecisionTreeSaveRequest,
     NormativeDocumentResponse,
     NormativeSuggestResponse,
     NormativeSuggestion,
@@ -260,6 +262,54 @@ async def suggest_normatives(
 
     suggestions = [NormativeSuggestion(**s) for s in suggestions_raw]
     return NormativeSuggestResponse(suggestions=suggestions)
+
+
+# ── Decision-tree answers ─────────────────────────────────────────────────────
+
+@router.get(
+    "/projects/{project_id}/normatives/decision-tree",
+    response_model=DecisionTreeResponse,
+)
+async def get_decision_tree(
+    project_id: str,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """Return the saved decision-tree answers for a project."""
+    result = (
+        supabase.table("projects")
+        .select("normative_decision_tree_answers")
+        .eq("id", project_id)
+        .single()
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return DecisionTreeResponse(answers=result.data.get("normative_decision_tree_answers") or {})
+
+
+@router.put(
+    "/projects/{project_id}/normatives/decision-tree",
+    response_model=DecisionTreeResponse,
+)
+async def save_decision_tree(
+    project_id: str,
+    body: DecisionTreeSaveRequest,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """Save (replace) the decision-tree answers for a project."""
+    result = (
+        supabase.table("projects")
+        .update({"normative_decision_tree_answers": body.answers})
+        .eq("id", project_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return DecisionTreeResponse(answers=result.data[0].get("normative_decision_tree_answers") or {})
 
 
 # ── Get active normatives for a project ──────────────────────────────────────
