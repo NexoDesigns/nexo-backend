@@ -178,6 +178,37 @@ async def get_document(
     return result.data
 
 
+# ── Download URL ─────────────────────────────────────────────────────────────
+
+@router.get("/documents/{document_id}/download-url")
+async def get_document_download_url(
+    document_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """
+    Returns a short-lived signed URL (1 hour) to download any document file.
+    """
+    result = (
+        supabase.table("documents")
+        .select("id, storage_path")
+        .eq("id", str(document_id))
+        .single()
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    signed = supabase.storage.from_("documents").create_signed_url(
+        result.data["storage_path"],
+        expires_in=3600,
+    )
+    if not signed or not signed.get("signedURL"):
+        raise HTTPException(status_code=500, detail="Failed to generate download URL")
+
+    return {"url": signed["signedURL"], "expires_in": 3600}
+
+
 # ── Delete ────────────────────────────────────────────────────────────────────
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
