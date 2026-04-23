@@ -44,10 +44,13 @@ async def get_embedding(text: str) -> list[float]:
     return response.data[0].embedding
 
 
+MAX_CHUNKS_PER_BATCH = 300  # ~800 tokens/chunk × 300 = 240k, safely under OpenAI's 300k limit
+
+
 async def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
     """
-    Embed multiple texts in a single API call (up to 2048 inputs).
-    More efficient than calling get_embedding() in a loop.
+    Embed multiple texts, automatically splitting into sub-batches to stay
+    under OpenAI's 300k tokens-per-request limit.
     """
     texts = [t.replace("\n", " ").strip() for t in texts]
     texts = [t for t in texts if t]  # drop empty strings
@@ -56,9 +59,15 @@ async def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
         return []
 
     client = _get_client()
-    response = await client.embeddings.create(
-        input=texts,
-        model=EMBEDDING_MODEL,
-    )
-    # API returns embeddings in the same order as the input
-    return [item.embedding for item in sorted(response.data, key=lambda x: x.index)]
+    all_embeddings: list[list[float]] = []
+
+    for i in range(0, len(texts), MAX_CHUNKS_PER_BATCH):
+        batch = texts[i : i + MAX_CHUNKS_PER_BATCH]
+        response = await client.embeddings.create(
+            input=batch,
+            model=EMBEDDING_MODEL,
+        )
+        batch_embeddings = [item.embedding for item in sorted(response.data, key=lambda x: x.index)]
+        all_embeddings.extend(batch_embeddings)
+
+    return all_embeddings
