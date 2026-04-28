@@ -1,19 +1,11 @@
 """
-Digikey OAuth2 Authentication
+Digikey OAuth2 Authentication — Client Credentials Flow
 
-Manages the OAuth2 token lifecycle:
-- Initial authorization flow (one-time, via CLI script)
-- Automatic token refresh before each API call
-- Token persistence in Supabase (table: tool_credentials)
+Uses client_id + client_secret to get tokens automatically.
+No browser authorization needed. Token is cached in Supabase
+and refreshed automatically before each API call.
 
 Token storage schema (tool_credentials table):
-  CREATE TABLE tool_credentials (
-    key TEXT PRIMARY KEY,
-    value JSONB NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-  );
-
-Run this SQL once in Supabase to create the table:
   CREATE TABLE IF NOT EXISTS tool_credentials (
     key TEXT PRIMARY KEY,
     value JSONB NOT NULL,
@@ -34,7 +26,6 @@ from core.supabase import get_supabase
 
 DIGIKEY_TOKEN_KEY = "digikey_oauth2"
 DIGIKEY_TOKEN_URL = "https://api.digikey.com/v1/oauth2/token"
-DIGIKEY_AUTH_URL = "https://api.digikey.com/v1/oauth2/authorize"
 
 
 class DigikeyAuthError(Exception):
@@ -73,14 +64,13 @@ def _is_expired(token_data: dict, buffer_seconds: int = 120) -> bool:
     return time.time() >= (expires_at - buffer_seconds)
 
 
-async def _refresh_token(refresh_token: str) -> dict:
-    """Exchange a refresh token for a new access token."""
+async def _fetch_token() -> dict:
+    """Fetch a new access token using client credentials."""
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
             DIGIKEY_TOKEN_URL,
             data={
-                "grant_type": "refresh_token",
-                "refresh_token": refresh_token,
+                "grant_type": "client_credentials",
                 "client_id": settings.DIGIKEY_CLIENT_ID,
                 "client_secret": settings.DIGIKEY_CLIENT_SECRET,
             },
@@ -89,7 +79,7 @@ async def _refresh_token(refresh_token: str) -> dict:
 
     if response.status_code != 200:
         raise DigikeyAuthError(
-            f"Token refresh failed: {response.status_code} {response.text}"
+            f"Token fetch failed: {response.status_code} {response.text}"
         )
 
     data = response.json()
@@ -99,28 +89,13 @@ async def _refresh_token(refresh_token: str) -> dict:
 
 async def get_access_token() -> str:
     """
-    Return a valid Digikey access token, refreshing if necessary.
-    Raises DigikeyAuthError if no token is stored (run authorize.py first).
+    Return a valid Digikey access token, fetching a new one if expired.
+    Uses client credentials flow — no user authorization needed.
     """
     token_data = _load_token()
-    if not token_data:
-        raise DigikeyAuthError(
-            "No Digikey token found. Run: python integrations/digikey/authorize.py"
-        )
 
-    if _is_expired(token_data):
-        refresh = token_data.get("refresh_token")
-        if not refresh:
-            raise DigikeyAuthError(
-                "Token expired and no refresh_token available. Re-authorize."
-            )
-        token_data = await _refresh_token(refresh)
+    if not token_data or _is_expired(token_data):
+        token_data = await _fetch_token()
         _save_token(token_data)
 
     return token_data["access_token"]
-
-
-def save_initial_token(token_data: dict) -> None:
-    """Called once by authorize.py after the initial OAuth2 flow."""
-    token_data["expires_at"] = time.time() + int(token_data.get("expires_in", 1800))
-    _save_token(token_data)
