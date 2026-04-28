@@ -72,8 +72,15 @@ def filter_and_pick_cheapest(
         except ValueError:
             price_num = None
 
-        availability_in_stock = part.get("AvailabilityInStock", 0) or 0
-        factory_stock = part.get("FactoryStock", 0) or 0
+        try:
+            availability_in_stock = int(part.get("AvailabilityInStock") or 0)
+        except (ValueError, TypeError):
+            availability_in_stock = 0
+
+        try:
+            factory_stock = int(part.get("FactoryStock") or 0)
+        except (ValueError, TypeError):
+            factory_stock = 0
 
         in_stock = str(availability_in_stock) if availability_in_stock > 0 else None
         factory = str(factory_stock) if factory_stock > 0 else None

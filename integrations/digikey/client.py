@@ -78,8 +78,15 @@ def filter_and_pick_cheapest(products: list[dict]) -> dict | None:
             if pricing:
                 unit_price = pricing[0].get("UnitPrice")
 
-        qty_available = product.get("QuantityAvailable", 0) or 0
-        manufacturer_qty = product.get("ManufacturerPublicQuantity", 0) or 0
+        try:
+            qty_available = int(product.get("QuantityAvailable") or 0)
+        except (ValueError, TypeError):
+            qty_available = 0
+
+        try:
+            manufacturer_qty = int(product.get("ManufacturerPublicQuantity") or 0)
+        except (ValueError, TypeError):
+            manufacturer_qty = 0
         status = (product.get("ProductStatus") or {}).get("Status", "")
 
         if status in ("Obsolete", "Discontinued at DigiKey"):
