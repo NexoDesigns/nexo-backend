@@ -138,6 +138,27 @@ def _select_cheapest(
     return prefer_digikey() if digikey else prefer_mouser()
 
 
+async def check_availability_by_mpn(
+    part_numbers: list[str],
+    concurrency: int = 5,
+) -> dict[str, dict]:
+    """
+    Like check_availability but returns a dict keyed by the INPUT MPN string.
+    This ensures the key always matches what was searched, regardless of what
+    the supplier API returns as ManufacturerPartNumber.
+    """
+    semaphore = asyncio.Semaphore(concurrency)
+
+    async def check_with_limit(mpn: str) -> dict:
+        async with semaphore:
+            return await _check_single_part(mpn)
+
+    results = await asyncio.gather(
+        *[check_with_limit(mpn) for mpn in part_numbers]
+    )
+    return dict(zip(part_numbers, results))
+
+
 async def check_availability(
     part_numbers: list[str],
     concurrency: int = 5,

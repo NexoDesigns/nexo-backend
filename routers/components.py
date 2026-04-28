@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from core.security import get_current_user_id
-from integrations.components.availability import check_availability
+from integrations.components.availability import check_availability_by_mpn
 from integrations.components.bom import build_bom
 
 router = APIRouter(prefix="/components", tags=["Components"])
@@ -134,7 +134,8 @@ async def check_ic_availability(
         raise HTTPException(status_code=400, detail="no valid part numbers found")
 
     try:
-        available, unavailable = await check_availability(clean_mpns)
+        # Keyed by input MPN — guaranteed to match what the frontend computed
+        results = await check_availability_by_mpn(clean_mpns)
     except Exception as e:
         raise HTTPException(
             status_code=502,
@@ -143,12 +144,13 @@ async def check_ic_availability(
 
     parts: dict[str, PartAvailabilityInfo] = {}
 
-    for part in available:
-        mpn = part.get("ManufacturerPartNumber", "")
-        if not mpn:
-            continue
-        parts[mpn] = PartAvailabilityInfo(
-            available=True,
+    for input_mpn, part in results.items():
+        has_stock = (
+            (part.get("InStock") is not None and part.get("InStock") != "") or
+            (part.get("FactoryStock") is not None and part.get("FactoryStock") != "")
+        )
+        parts[input_mpn] = PartAvailabilityInfo(
+            available=has_stock,
             supplier=part.get("Supplier"),
             unit_price=str(part["UnitPrice"]) if part.get("UnitPrice") is not None else None,
             currency=part.get("Currency"),
@@ -157,11 +159,5 @@ async def check_ic_availability(
             datasheet_url=part.get("DatasheetUrl"),
             manufacturer=part.get("Manufacturer"),
         )
-
-    for part in unavailable:
-        mpn = part.get("ManufacturerPartNumber", "")
-        if not mpn:
-            continue
-        parts[mpn] = PartAvailabilityInfo(available=False)
 
     return IcAvailabilityResponse(parts=parts)
