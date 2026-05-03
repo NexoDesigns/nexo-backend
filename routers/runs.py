@@ -1,11 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from core.security import get_current_user_id
 from core.supabase import get_supabase
 from models.run import RunComplete, RunCreate, RunDetail, RunNotesUpdate, RunSummary, RunTriggerResponse
 from services import n8n_service
+from services.bom_service import run_component_bom
 
 router = APIRouter(prefix="/projects/{project_id}/phases/{phase_id}", tags=["Runs"])
 
@@ -238,3 +239,38 @@ async def update_run_notes(
     if not result.data:
         raise HTTPException(status_code=404, detail="Run not found")
     return {"run_id": str(run_id), "notes": body.notes}
+
+
+# ── BOM recheck ───────────────────────────────────────────────────────────────
+
+@router.post("/runs/{run_id}/bom", status_code=status.HTTP_202_ACCEPTED)
+async def recheck_bom(
+    project_id: UUID,
+    phase_id: str,
+    run_id: UUID,
+    background_tasks: BackgroundTasks,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """
+    Re-run the BOM availability check on an existing completed component_selection run.
+    The check runs in the background; poll GET /runs/{run_id} for the updated bom_result.
+    """
+    if phase_id != "component_selection":
+        raise HTTPException(status_code=400, detail="BOM check only available for component_selection phase")
+
+    run_result = (
+        supabase.table("phase_runs")
+        .select("id, status, output_payload")
+        .eq("id", str(run_id))
+        .eq("project_id", str(project_id))
+        .single()
+        .execute()
+    )
+    if not run_result.data:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if run_result.data["status"] != "completed":
+        raise HTTPException(status_code=400, detail="BOM check requires a completed run")
+
+    background_tasks.add_task(run_component_bom, str(run_id), run_result.data["output_payload"] or {})
+    return {"run_id": str(run_id), "message": "BOM check scheduled"}

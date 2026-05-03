@@ -1,0 +1,206 @@
+{
+    "ic_selection": {
+        "error": "None",
+        "results": [
+            {
+                "id": "A",
+                "title": "Synchronous Boost Converter",
+                "design": "A",
+                "components": [
+                    {
+                        "ic_type": "Current-mode synchronous boost controller",
+                        "description": "Wide-input synchronous boost controller suitable for regulating 5V input to 10V output at multi-ampere load using external power MOSFETs, with programmable protections and robust control loop behavior.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "LM5122",
+                        "selection_rationale": "Professional-grade controller from highest-preference manufacturer. External-FET architecture provides thermal margin, component derating flexibility, industrial robustness, and easier optimization for >15W output than highly integrated low-power converters. Includes cycle-by-cycle current limit, soft start, UVLO, and support for high-efficiency synchronous topology."
+                    },
+                    {
+                        "ic_type": "N-channel power MOSFET",
+                        "description": "Low-RDS(on) NexFET power MOSFET for the primary switching positions in the synchronous boost stage.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "CSD18540Q5B",
+                        "selection_rationale": "Using the same robust TI MOSFET for both switching positions simplifies qualification and improves efficiency margin. Low conduction loss supports the stated >95% efficiency target and reduces thermal stress in industrial temperature conditions."
+                    },
+                    {
+                        "ic_type": "N-channel power MOSFET",
+                        "description": "Companion low-RDS(on) power MOSFET used as the synchronous rectifier in the boost stage.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "CSD18540Q5B",
+                        "selection_rationale": "Matched device minimizes switching asymmetry, eases gate-drive tuning, and supports compact, thermally balanced implementation for production use."
+                    },
+                    {
+                        "ic_type": "Current-sense amplifier",
+                        "description": "Precision bidirectional current-sense amplifier with enhanced PWM rejection for monitoring converter current in a noisy switching environment.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "INA241A2",
+                        "selection_rationale": "Adds production-grade observability, fault logging capability, load characterization, and protection supervision. The strong PWM rejection makes it appropriate for placement near switching nodes where simpler amplifiers may produce false readings."
+                    },
+                    {
+                        "ic_type": "Industrial eFuse / hot-swap protection",
+                        "description": "Integrated input protection IC providing inrush control, adjustable current limit, short-circuit protection, reverse polarity handling support, and fault reporting on the converter input rail.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "TPS26600",
+                        "selection_rationale": "A professional implementation should protect the upstream 5V source and the boost stage from shorts, startup surges, and overloads. An eFuse materially improves survivability and maintainability versus relying only on the converter controller’s internal protections."
+                    },
+                    {
+                        "ic_type": "Voltage supervisor / watchdog",
+                        "description": "High-accuracy supervisory IC used to monitor regulated rail validity and provide reset/fault signaling when voltage is out of tolerance.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "TPS3851H33",
+                        "selection_rationale": "Adds explicit rail-good monitoring independent of the converter controller loop, improving diagnostics, startup sequencing confidence, and interface reliability for downstream electronics powered from the 10V rail."
+                    },
+                    {
+                        "ic_type": "Dual operational amplifier",
+                        "description": "Dual precision op-amp for buffering monitored analog nodes such as output voltage, current-sense signals, or thermal telemetry into test points, ADCs, or supervisory circuits.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "TLV9062",
+                        "selection_rationale": "Useful in a production design for signal conditioning, scaling, and filtering of diagnostics without loading critical feedback nodes. Provides flexibility for factory test, telemetry, and future system monitoring expansion."
+                    },
+                    {
+                        "ic_type": "Analog temperature sensor",
+                        "description": "Analog temperature sensor for thermal telemetry near power stage hot spots such as MOSFETs or inductor area.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "TMP235",
+                        "selection_rationale": "Thermal monitoring is appropriate for a compact high-efficiency converter intended for industrial deployment. It supports validation, derating strategies, overtemperature response, and predictive maintenance instrumentation."
+                    }
+                ],
+                "description": "A synchronous boost converter utilizes two MOSFETs to increase the 5V supply to a regulated 10V at 1.5A, achieving efficiencies exceeding 95% while keeping size compact. This topology helps minimize conduction losses and ripple to below 5% with appropriate output capacitors. Its design can integrate built-in protection features like overvoltage and overcurrent shutoff, fitting the industrial temperature range from -40°C to 125°C. This approach is optimal for applications requiring high efficiency and a reduced footprint.",
+                "key_references": "DC-DC Converters: Common Types,Functionality,Key Parameters | Monolithic Power,Texas Instruments DC/DC Switching Regulators Overview | TI.com,High Integration,High Efficiency Power Solution using DC-DC | TI Application Note"
+            },
+            {
+                "id": "C",
+                "title": "Inductor-based Boost Converter",
+                "design": "B",
+                "components": [
+                    {
+                        "ic_type": "Boost controller",
+                        "description": "Wide-duty-cycle current-mode boost controller suited for stepping 5V to 10V with external switching elements, programmable soft start, current limiting, and robust compensation options for variable load conditions.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "LM5155",
+                        "selection_rationale": "A controller-based architecture is appropriate for a flexible, industrial inductor-based boost design where load conditions fluctuate and maintainability matters. TI is highest preference, and this device offers better design margin and protection configurability than minimal integrated converters."
+                    },
+                    {
+                        "ic_type": "N-channel power MOSFET",
+                        "description": "Low-RDS(on) power MOSFET used as the main controlled switch in the boost converter power train.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "CSD18540Q5B",
+                        "selection_rationale": "Provides efficiency margin, low thermal stress, and robust current handling for industrial operation with fluctuating load. A discrete external MOSFET approach improves scalability and serviceability."
+                    },
+                    {
+                        "ic_type": "Ideal diode controller",
+                        "description": "Ideal diode controller used to block reverse current and prevent input backfeed or supply misconnection damage.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "LM74610-Q1",
+                        "selection_rationale": "Real-world boost converters often encounter reverse supply events or output-to-input backfeed scenarios. This adds production-grade robustness beyond the minimum reference designs."
+                    },
+                    {
+                        "ic_type": "Industrial eFuse / hot-swap protection",
+                        "description": "Integrated eFuse protecting the 5V source and converter from overload, short circuit, and hot-plug transients while limiting startup current.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "TPS26600",
+                        "selection_rationale": "Improves field reliability, source protection, fault isolation, and surge survivability. Especially valuable when load conditions are variable and deployment environment is industrial."
+                    },
+                    {
+                        "ic_type": "Current-sense amplifier",
+                        "description": "Bidirectional current-sense amplifier with high common-mode transient rejection for accurate current telemetry in switching converter environments.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "INA240A1",
+                        "selection_rationale": "Enables accurate load and fault current measurement under noisy PWM conditions, supporting diagnostics, protection thresholds, and production test coverage."
+                    },
+                    {
+                        "ic_type": "Dual voltage supervisor",
+                        "description": "Dual-channel supervisor for monitoring converter input rail and 10V output rail with independent thresholds and fault signaling.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "TPS3702",
+                        "selection_rationale": "Adds explicit fault qualification and rail validity monitoring, improving startup behavior, downstream system safety, and maintainability compared with relying solely on converter controller internal comparators."
+                    },
+                    {
+                        "ic_type": "Analog temperature sensor",
+                        "description": "Temperature sensor for monitoring thermal rise near the switch, inductor, or power path hot spots.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "TMP235",
+                        "selection_rationale": "Supports thermal validation, field diagnostics, and optional derating/fan control strategy in a robust deployed product."
+                    },
+                    {
+                        "ic_type": "Dual operational amplifier",
+                        "description": "Dual op-amp for buffering and filtering analog feedback, telemetry, or factory-test signals associated with output voltage and current monitoring.",
+                        "manufacturer": "TEXAS INSTRUMENTS",
+                        "ic_part_number": "TLV9062",
+                        "selection_rationale": "Professional products benefit from conditioned observability points and flexibility for future monitoring expansion without disturbing control-loop nodes."
+                    }
+                ],
+                "description": "Inductor-based boost converters leverage inductors to efficiently step up voltage from 5V to 10V. They are compatible with larger output currents and ensure low output ripple (under 5%) through appropriate filtering. This design can accommodate varying loads and conditions in industrial environments by utilizing appropriate hysteretic or PWM control techniques. While typically larger than charge pumps, they provide flexibility and robustness in real-world applications where load conditions fluctuate.",
+                "key_references": "Murata Electronics DC-DC Converters Application Notes,Texas Instruments Switching Regulator Design Tips | TI.com,Analog Devices Application Note on DC-DC Boost Converters"
+            },
+            {
+                "id": "",
+                "title": "",
+                "design": "C",
+                "components": [],
+                "description": "",
+                "key_references": ""
+            }
+        ],
+        "total_designs": 3,
+        "total_components": 16
+    },
+    "ic_naming_agent": {
+        "Design A": [
+            "LM5122",
+            "CSD18540Q5B",
+            "CSD18540Q5B",
+            "INA241A2",
+            "TPS26600",
+            "TPS3851",
+            "TLV9062",
+            "TMP235"
+        ],
+        "Design B": [
+            "LM5155",
+            "CSD18540Q5B",
+            "LM74610",
+            "TPS26600",
+            "INA240A1",
+            "TPS3702",
+            "TMP235",
+            "TLV9062"
+        ],
+        "Design C": []
+    },
+    "research": {
+        "error": "None",
+        "solutions": [
+            {
+                "id": "A",
+                "title": "Synchronous Boost Converter",
+                "description": "The Synchronous Boost Converter efficiently converts a 5V input to a 10V output using an inductor, switching MOSFETs, and a feedback loop for regulation. This topology achieves high efficiencies (over 85%) and minimizes component size, making it ideal for portable applications. With integrated switches and fewer external components, it suits the specs including 1.5A output and 5% ripple. However, it is more complex than simple boost converters and may require careful component selection to optimize efficiency.",
+                "key_references": [
+                    "LTC3459 | 10V Micropower Synchronous Boost Converter - Analog Devices",
+                    "Comparing Topologies and the (Design) Rules of the Game - Texas Instruments",
+                    "DC/DC BOOK OF KNOWLEDGE - RECOM Power"
+                ]
+            },
+            {
+                "id": "B",
+                "title": "LT1310 Boost Converter",
+                "description": "The LT1310 from Analog Devices is designed for 1.5A output and operates over the industrial temperature range, providing a reliable solution for stepping up 5V to 10V while maintaining efficiency around 92%. It includes a phase-locked loop for controlled switching frequency, which helps reduce ripple and meets the <5% ripple requirement. This topology is compact with minimal components and allows for flexibility in design, making it an ideal candidate for battery-operated devices.",
+                "key_references": [
+                    "LT1310 - 1.5A Boost DC/DC Converter with Phase-Locked Loop - Analog Devices",
+                    "DC/DC Converter Selection Guide - ROHM",
+                    "Designing with the STEVAL-ISA089V1 high efficiency DC-DC converter - STMicroelectronics"
+                ]
+            },
+            {
+                "id": "C",
+                "title": "Charge Pump Voltage Doubler",
+                "description": "A Charge Pump Voltage Doubler, using capacitive switching, can step up a 5V source to close to 10V, making it appropriate for applications with low current demands (typically <1A). This topology is simple and low-cost, requiring fewer components than an inductor-based boost converter. While it may not achieve the same efficiency as higher-complexity inductive solutions under all conditions, it is ideal for minimal size and complexity if higher output current is not a strict requirement.",
+                "key_references": [
+                    "Boost Converter Application with Charge Pump - Digi-Key",
+                    "DC Converter Overview - TTM Technologies",
+                    "Understanding Charge Pump Designs - Texas Instruments"
+                ]
+            }
+        ],
+        "query_summary": "Research on circuit design topologies for a DC-DC converter stepping up from 5V to 10V."
+    }
+}

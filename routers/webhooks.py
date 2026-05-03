@@ -14,6 +14,7 @@ from core.config import settings
 from core.supabase import get_supabase
 from models.run import N8nCallbackBody
 from services.ingestion_service import ingest_phase_output
+from services.bom_service import run_component_bom
 
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 
@@ -106,5 +107,9 @@ async def n8n_callback(
                 output_payload=body.output_payload,
                 created_by=run.get("created_by", ""),
             )
+
+        # ── BOM check for component_selection ─────────────────────────────────
+        if run["phase_id"] == "component_selection" and body.output_payload:
+            background_tasks.add_task(run_component_bom, str(body.run_id), body.output_payload)
 
     return {"message": "Run updated successfully", "run_id": str(body.run_id), "status": body.status}

@@ -155,6 +155,7 @@ async def build_bom(
     """
     # Step 1: Classify passives
     classified = classify(components)
+    print("classified:", classified)
 
     # Step 2: Search passives by category in Digikey
     logger.info("Searching passives in Digikey...")

@@ -48,6 +48,7 @@ class RunDetail(BaseModel):
     duration_seconds: Optional[float]
     llm_tokens_used: Optional[int]
     notes: Optional[str] = None
+    bom_result: Optional[dict[str, Any]] = None
     created_by: Optional[UUID]
     created_at: datetime
     completed_at: Optional[datetime]
