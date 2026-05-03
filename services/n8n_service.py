@@ -122,6 +122,7 @@ async def _build_component_selection_input(
 
     The ic_naming and ic_selection components are matched by position (same order assumed).
     """
+    print("previous outputs build omponent selection input", previous_outputs)
     # --- ic_naming output ---
     naming_output = previous_outputs.get("ic_naming_agent") or {}
     design_key = f"design{selected_design_id}"
@@ -154,7 +155,7 @@ async def _build_component_selection_input(
                 datasheet_map[mpn] = data.get("DatasheetUrl") if data else None
         except Exception:
             pass
-
+            print("datahseet map component selection input:", datasheet_map)
     # --- Build ic_components array (matched by position) ---
     ic_components = []
     for i, mpn in enumerate(clean_mpns):
@@ -200,7 +201,7 @@ async def trigger_phase(
     # 2. Previous phase outputs
     previous_phases = _phases_before(phase_id)
     previous_outputs = await _get_active_run_outputs(project_id, previous_phases, supabase)
-
+    print("previous outputs trigger phase", previous_outputs)
     # 3. component_selection: build merged ic_components input from ic_selection + ic_naming
     component_selection_input: dict[str, Any] = {}
     if phase_id == "component_selection":
