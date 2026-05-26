@@ -8,7 +8,7 @@ relying on the automatic RAG injection in pipeline executions.
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from core.security import get_current_user_id
+from core.security import get_current_user_id_flexible
 from models.document import RAGSearchRequest, RAGSearchResult
 from services import rag_service
 
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/rag", tags=["RAG"])
 @router.post("/search", response_model=RAGSearchResult)
 async def semantic_search(
     body: RAGSearchRequest,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id_flexible),
 ):
     """
     Run a semantic search against the document knowledge base.

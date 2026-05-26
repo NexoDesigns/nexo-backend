@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     LITELLM_URL: str = ""
     LITELLM_API_KEY: str = ""
 
+    # n8n service-to-service auth (static API key, never expires)
+    N8N_SERVICE_API_KEY: str = ""
+    N8N_SERVICE_USER_ID: str = ""
+
     # CORS — comma-separated list of allowed frontend origins
     ALLOWED_ORIGINS: str = "http://localhost:3000"
 
