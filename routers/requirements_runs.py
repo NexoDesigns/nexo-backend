@@ -213,6 +213,48 @@ async def get_requirements_run(
     return result.data
 
 
+# ── Activate a requirements run ───────────────────────────────────────────────
+
+@router.post("/runs/{run_id}/activate", response_model=RequirementsRunSummary)
+async def activate_requirements_run(
+    project_id: UUID,
+    run_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """
+    Mark a completed requirements run as the active run for this project.
+
+    Stores active_requirements_run_id on the project so downstream phases
+    (e.g. Research) can read the output Drive URL automatically.
+    Only completed runs can be activated.
+    """
+    run_result = (
+        supabase.table("requirements_runs")
+        .select("id, run_number, status, output_drive_url, output_drive_file_id, "
+                "custom_prompt, input_drive_url, error_message, n8n_execution_id, "
+                "created_by, created_at, completed_at, duration_seconds")
+        .eq("id", str(run_id))
+        .eq("project_id", str(project_id))
+        .single()
+        .execute()
+    )
+    if not run_result.data:
+        raise HTTPException(status_code=404, detail="Requirements run not found")
+
+    if run_result.data["status"] != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Only completed runs can be activated",
+        )
+
+    supabase.table("projects").update(
+        {"active_requirements_run_id": str(run_id)}
+    ).eq("id", str(project_id)).execute()
+
+    return run_result.data
+
+
 # ── n8n callback — complete a requirements run ────────────────────────────────
 
 @router.post("/runs/{run_id}/complete", status_code=status.HTTP_200_OK)

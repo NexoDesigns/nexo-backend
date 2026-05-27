@@ -42,6 +42,7 @@ class ProjectResponse(BaseModel):
     normative_user_age_range: Optional[str] = None
     normative_target_countries: Optional[List[str]] = None
     normative_extra_context: Optional[str] = None
+    active_requirements_run_id: Optional[UUID] = None
 
 
 # ── Project Requirements ──────────────────────────────────────────────────────
