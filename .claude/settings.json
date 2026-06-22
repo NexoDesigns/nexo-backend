@@ -7,7 +7,12 @@
       "Bash(cd /c/Users/Usuario/Documents/\"Nexo Design\"/nexo-backend)",
       "Bash(find /c/Users/Usuario/Documents/Nexo Design/nexo-backend -type f -name *.md)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "PowerShell(ls -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-frontend\\\\\" -Directory)",
+      "PowerShell(ls -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-frontend\\\\src\\\\app\" -Recurse | Where-Object {$_.Extension -eq \".tsx\"} | Select-Object -First 40)",
+      "PowerShell(ls -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-frontend\\\\components\" -Recurse | Where-Object {$_.Extension -eq \".tsx\"} | Select-Object -First 100)",
+      "PowerShell(ls -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-frontend\\\\src\\\\types\" -Recurse | Where-Object {$_.Extension -eq \".ts\"})",
+      "PowerShell(ls -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-frontend\\\\src\\\\lib\" -File | Where-Object {$_.Extension -eq \".ts\"})"
     ]
   },
   "enabledPlugins": {
