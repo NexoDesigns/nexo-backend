@@ -36,7 +36,15 @@ class Settings(BaseSettings):
     N8N_SERVICE_USER_ID: str = ""
 
     # CORS — comma-separated list of allowed frontend origins
-    ALLOWED_ORIGINS: str = "http://localhost:3000"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,https://mikacelber.github.io"
+
+    # Signing secret for the architecture-editor hand-off link (short-lived,
+    # scoped token — separate from Supabase's own JWT secret, which this
+    # backend never verifies against, see core/security.py)
+    EDITOR_LINK_SECRET: str = ""
+
+    # System Diagram App (architecture-editor), deployed on GitHub Pages
+    ARCHITECTURE_EDITOR_URL: str = "https://mikacelber.github.io/architecture-editor/"
 
     class Config:
         env_file = ".env"

@@ -7,20 +7,16 @@ Responsible for:
 3. Calling the n8n webhook.
 """
 
-import re
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
 import httpx
 
+from constants.pipeline import PHASE_ORDER
 from core.config import settings
 from core.supabase import get_supabase
 from services import rag_service
-
-_SUFFIX_RE = re.compile(r"^(.+?)\s+\(.+\)$")
-
-PHASE_ORDER = ["research", "ic_selection", "ic_naming_agent", "component_selection", "netlist"]
 
 
 def _phases_before(phase_id: str) -> list[str]:
@@ -102,39 +98,24 @@ async def _get_phase_webhook_path(phase_id: str, supabase) -> str:
     return result.data["n8n_webhook_path"]
 
 
-def _clean_mpn(raw: str) -> str:
-    """Strip display suffixes like ' (D)', ' (X)' from part numbers."""
-    m = _SUFFIX_RE.match(raw.strip())
-    return m.group(1) if m else raw.strip()
-
-
-async def _build_component_selection_input(
+def _build_architecture_agent_input(
     selected_design_id: str,
     previous_outputs: dict[str, Any],
 ) -> dict[str, Any]:
+    """Extracts the chosen ic_selection design's components for the architecture_agent n8n workflow.
+
+    ic_selection's own output already carries ic_type/manufacturer/ic_part_number/
+    description/selection_rationale per component (see IcSelectionOutputViewer.tsx),
+    so — unlike the old ic_naming_agent step this replaces — no MPN-resolution or
+    datasheet lookup happens here; that now lives inside architecture_agent's own
+    n8n workflow.
     """
-    Builds the merged ic_components input for the component_selection n8n workflow.
-
-    Merges:
-    - ic_naming_agent output: real MPNs for the chosen design
-    - ic_selection output: selection_rationale, description, key_references per design
-    - availability check: DatasheetUrl per MPN (null if check fails)
-
-    The ic_naming and ic_selection components are matched by position (same order assumed).
-    """
-    # --- ic_naming output ---
-    naming_output = previous_outputs.get("ic_naming_agent") or {}
-    design_key = f"Design {selected_design_id}"
-    raw_mpns: list[str] = naming_output.get(design_key) or []
-    clean_mpns = [_clean_mpn(mpn) for mpn in raw_mpns]
-
-    # --- ic_selection output ---
     selection_output = previous_outputs.get("ic_selection") or {}
     results: list[dict] = selection_output.get("results") or []
     design_result = next(
         (r for r in results if r.get("id") == selected_design_id), {}
     )
-    ic_selection_components: list[dict] = design_result.get("components") or []
+    ic_components: list[dict] = design_result.get("components") or []
     description: str = design_result.get("description") or ""
     key_references = design_result.get("key_references") or ""
 
@@ -143,26 +124,6 @@ async def _build_component_selection_input(
     if isinstance(research_output, list):
         research_output = research_output[0] if research_output else {}
     query_summary: str = research_output.get("query_summary") or ""
-
-    # --- availability check for DatasheetUrl (best-effort, null on failure) ---
-    datasheet_map: dict[str, str | None] = {}
-    if clean_mpns:
-        try:
-            from integrations.components.availability import check_availability_by_mpn
-            avail_results = await check_availability_by_mpn(clean_mpns)
-            for mpn, data in avail_results.items():
-                datasheet_map[mpn] = data.get("DatasheetUrl") if data else None
-        except Exception:
-            pass
-    # --- Build ic_components array (matched by position) ---
-    ic_components = []
-    for i, mpn in enumerate(clean_mpns):
-        component = ic_selection_components[i] if i < len(ic_selection_components) else {}
-        ic_components.append({
-            "Part_number": mpn,
-            "DatasheetUrl": datasheet_map.get(mpn),
-            "selection_rationale": component.get("selection_rationale") or "",
-        })
 
     return {
         "query_summary": query_summary,
@@ -200,13 +161,13 @@ async def trigger_phase(
     previous_phases = _phases_before(phase_id)
     previous_outputs = await _get_active_run_outputs(project_id, previous_phases, supabase)
 
-    # 3. component_selection: build merged ic_components input from ic_selection + ic_naming
-    component_selection_input: dict[str, Any] = {}
-    if phase_id == "component_selection":
+    # 3. architecture_agent: build ic_components input from the chosen ic_selection design
+    architecture_agent_input: dict[str, Any] = {}
+    if phase_id == "architecture_agent":
         selected_design_id = (custom_inputs or {}).get("selected_design_id")
         if not selected_design_id:
-            raise ValueError("selected_design_id is required for component_selection phase")
-        component_selection_input = await _build_component_selection_input(
+            raise ValueError("selected_design_id is required for architecture_agent phase")
+        architecture_agent_input = _build_architecture_agent_input(
             str(selected_design_id), previous_outputs
         )
 
@@ -233,9 +194,9 @@ async def trigger_phase(
         "custom_inputs": custom_inputs or {},
         "use_perplexity": use_perplexity if use_perplexity is not None else True, # por defecto siempre se usa perplexity
         "rag_context": rag_context,
-        # For component_selection: inject merged ic_components at root level
-        # so the n8n workflow can access $input.first().json.ic_components etc.
-        **component_selection_input,
+        # For architecture_agent: inject the chosen design's ic_components at root
+        # level so the n8n workflow can access $input.first().json.ic_components etc.
+        **architecture_agent_input,
     }
 
     supabase.table("phase_runs").insert({

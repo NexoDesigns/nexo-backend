@@ -67,6 +67,25 @@ class RunNotesUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+# ── Run output update (architecture-editor hand-off) ────────────────────────
+
+class RunOutputUpdate(BaseModel):
+    """Body sent by architecture-editor to persist the engineer-approved diagram.
+
+    output_payload overwrites phase_runs.output_payload wholesale (the editor
+    sends back its full editor_fixture + passives_handoff, not a partial patch).
+    editor_session is optional and only used to reopen the same layout later.
+    """
+    output_payload: dict[str, Any]
+    editor_session: Optional[dict[str, Any]] = None
+
+
+class EditorLinkResponse(BaseModel):
+    """Returned by POST .../editor-link — a short-lived hand-off URL for architecture-editor."""
+    url: str
+    expires_at: int
+
+
 # ── Complete run ──────────────────────────────────────────────────────────────
 
 class RunComplete(BaseModel):

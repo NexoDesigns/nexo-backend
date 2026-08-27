@@ -2,9 +2,20 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
-from core.security import get_current_user_id
+from constants.pipeline import EDITOR_LINK_PHASE_ID
+from core.config import settings
+from core.security import get_current_user_id, get_user_id_for_run, mint_editor_link_token
 from core.supabase import get_supabase
-from models.run import RunComplete, RunCreate, RunDetail, RunNotesUpdate, RunSummary, RunTriggerResponse
+from models.run import (
+    EditorLinkResponse,
+    RunComplete,
+    RunCreate,
+    RunDetail,
+    RunNotesUpdate,
+    RunOutputUpdate,
+    RunSummary,
+    RunTriggerResponse,
+)
 from services import n8n_service
 from services.bom_service import run_component_bom
 
@@ -113,12 +124,13 @@ async def get_run(
     project_id: UUID,
     phase_id: str,
     run_id: UUID,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_user_id_for_run),
     supabase=Depends(get_supabase),
 ):
     """
     Full detail of a single run, including input_payload, output_payload,
-    and rag_context. Used by the frontend for polling and for displaying results.
+    and rag_context. Used by the frontend for polling and for displaying results,
+    and by architecture-editor (via an editor-link token) to load the diagram.
     """
     result = (
         supabase.table("phase_runs")
@@ -141,14 +153,15 @@ async def activate_run(
     project_id: UUID,
     phase_id: str,
     run_id: UUID,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_user_id_for_run),
     supabase=Depends(get_supabase),
 ):
     """
     Mark a specific run as the 'active' run for this phase.
     The active run is what subsequent pipeline phases use as their input.
 
-    Only completed runs can be activated.
+    Only completed runs can be activated. Also called by architecture-editor
+    (via an editor-link token) once the engineer approves the diagram.
     """
     # Verify the run exists, belongs to this project/phase, and is completed
     run_result = (
@@ -183,6 +196,68 @@ async def activate_run(
         "run_id": str(run_id),
         "phase_id": phase_id,
     }
+
+
+# ── architecture-editor hand-off link ─────────────────────────────────────────
+
+@router.post("/runs/{run_id}/editor-link", response_model=EditorLinkResponse, status_code=status.HTTP_200_OK)
+async def create_editor_link(
+    project_id: UUID,
+    phase_id: str,
+    run_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase),
+):
+    """Mint a short-lived URL for architecture-editor (iframe or new tab), scoped to this run."""
+    if phase_id != EDITOR_LINK_PHASE_ID:
+        raise HTTPException(status_code=400, detail=f"Editor links are only available for the '{EDITOR_LINK_PHASE_ID}' phase")
+
+    _check_project_and_phase(str(project_id), phase_id, supabase)
+
+    token, expires_at = mint_editor_link_token(user_id, str(project_id), str(run_id))
+    url = f"{settings.ARCHITECTURE_EDITOR_URL}?project_id={project_id}&run_id={run_id}&token={token}"
+    return {"url": url, "expires_at": expires_at}
+
+
+@router.patch("/runs/{run_id}/output", status_code=status.HTTP_200_OK)
+async def update_run_output(
+    project_id: UUID,
+    phase_id: str,
+    run_id: UUID,
+    body: RunOutputUpdate,
+    user_id: str = Depends(get_user_id_for_run),
+    supabase=Depends(get_supabase),
+):
+    """Persist the engineer-approved diagram (editor_fixture + passives_handoff) sent back by architecture-editor."""
+    run_result = (
+        supabase.table("phase_runs")
+        .select("id, status")
+        .eq("id", str(run_id))
+        .eq("project_id", str(project_id))
+        .eq("phase_id", phase_id)
+        .single()
+        .execute()
+    )
+    if not run_result.data:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if run_result.data["status"] != "completed":
+        raise HTTPException(status_code=400, detail="Only a completed run's output can be updated")
+
+    # editor_session has no dedicated column (no schema change needed) — it
+    # rides inside output_payload under a private key instead.
+    output_payload = dict(body.output_payload)
+    if body.editor_session is not None:
+        output_payload["_editor_session"] = body.editor_session
+
+    result = (
+        supabase.table("phase_runs")
+        .update({"output_payload": output_payload})
+        .eq("id", str(run_id))
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return {"run_id": str(run_id), "message": "Output updated"}
 
 
 # ── Complete a run ────────────────────────────────────────────────────────────
