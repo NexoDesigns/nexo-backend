@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
-from routers import components, custom_outputs, documents, normatives, pipeline, profile, projects, rag, requirements_runs, runs, webhooks
+from routers import components, custom_outputs, datasheets, documents, normatives, pipeline, profile, projects, rag, requirements_runs, runs, webhooks
 
 app = FastAPI(
     title="Nexo Designs API",
@@ -32,6 +32,7 @@ app.include_router(rag.router)
 app.include_router(pipeline.router)
 app.include_router(components.router)
 app.include_router(normatives.router)
+app.include_router(datasheets.router)
 
 
 # ── Health check ──────────────────────────────────────────────────────────────
