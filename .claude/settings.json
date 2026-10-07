@@ -12,7 +12,8 @@
       "PowerShell(ls -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-frontend\\\\src\\\\app\" -Recurse | Where-Object {$_.Extension -eq \".tsx\"} | Select-Object -First 40)",
       "PowerShell(ls -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-frontend\\\\components\" -Recurse | Where-Object {$_.Extension -eq \".tsx\"} | Select-Object -First 100)",
       "PowerShell(ls -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-frontend\\\\src\\\\types\" -Recurse | Where-Object {$_.Extension -eq \".ts\"})",
-      "PowerShell(ls -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-frontend\\\\src\\\\lib\" -File | Where-Object {$_.Extension -eq \".ts\"})"
+      "PowerShell(ls -Path \"C:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-frontend\\\\src\\\\lib\" -File | Where-Object {$_.Extension -eq \".ts\"})",
+      "Bash(\"c:\\\\Users\\\\Usuario\\\\Documents\\\\Nexo Design\\\\nexo-backend\\\\venv\\\\Scripts\\\\python.exe\" -c \"import dotenv; print\\(dotenv.__file__\\)\")"
     ]
   },
   "enabledPlugins": {

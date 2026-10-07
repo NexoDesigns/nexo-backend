@@ -36,15 +36,17 @@ class Settings(BaseSettings):
     N8N_SERVICE_USER_ID: str = ""
 
     # CORS — comma-separated list of allowed frontend origins
-    ALLOWED_ORIGINS: str = "http://localhost:3000,https://mikacelber.github.io"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,https://editor.nexodesign.ai"
 
     # Signing secret for the architecture-editor hand-off link (short-lived,
     # scoped token — separate from Supabase's own JWT secret, which this
     # backend never verifies against, see core/security.py)
     EDITOR_LINK_SECRET: str = ""
 
-    # System Diagram App (architecture-editor), deployed on GitHub Pages
-    ARCHITECTURE_EDITOR_URL: str = "https://mikacelber.github.io/architecture-editor/"
+    # System Diagram App (architecture-editor): its own Vercel project, behind
+    # the subdomain auth gate (see core/authz.py and the gate middleware).
+    # The trailing slash matters — routers/runs.py appends "?project_id=..."
+    ARCHITECTURE_EDITOR_URL: str = "https://editor.nexodesign.ai/"
 
     class Config:
         env_file = ".env"
