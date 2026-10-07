@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from constants.pipeline import EDITOR_LINK_PHASE_ID
+from core.authz import assert_can_access_project
 from core.config import settings
 from core.security import get_current_user_id, get_user_id_for_run, mint_editor_link_token
 from core.supabase import get_supabase
@@ -212,6 +213,10 @@ async def create_editor_link(
     if phase_id != EDITOR_LINK_PHASE_ID:
         raise HTTPException(status_code=400, detail=f"Editor links are only available for the '{EDITOR_LINK_PHASE_ID}' phase")
 
+    # The same predicate the subdomain auth gate applies before it will even
+    # serve editor.nexodesign.ai, so neither can be used to bypass the other
+    # (core/authz.py). It subsumes the project-existence check.
+    assert_can_access_project(user_id, str(project_id), supabase)
     _check_project_and_phase(str(project_id), phase_id, supabase)
 
     token, expires_at = mint_editor_link_token(user_id, str(project_id), str(run_id))
